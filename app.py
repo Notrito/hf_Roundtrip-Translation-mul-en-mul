@@ -3,10 +3,16 @@ import torch
 import soundfile as sf
 from kokoro import KPipeline
 
+# Define options for the dropdown
+options = ['a', 'e', 'f', 'h', 'i', 'p']
+
+# Create a dropdown menu
+selected_option = st.selectbox("Select an option", options)
+
 # Load the text-to-speech model
 @st.cache_resource
 def load_pipeline():
-    return KPipeline(lang_code="a")
+    return KPipeline(lang_code=selected_option)
 
 pipeline = load_pipeline()
 
