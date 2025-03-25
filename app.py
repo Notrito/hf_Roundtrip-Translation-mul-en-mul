@@ -3,28 +3,34 @@ from transformers import pipeline
 
 # Load the text-to-speech model
 @st.cache_resource
-def load_tts_model():
-    return pipeline("text-to-speech", model="./models/kakao-enterprise/vits-ljs")
+def load_model():
+    model = VitsModel.from_pretrained("kakao-enterprise/vits-ljs")
+    tokenizer = AutoTokenizer.from_pretrained("kakao-enterprise/vits-ljs")
+    return model, tokenizer
 
-narrator = load_tts_model()
+model, tokenizer = load_model()
 
 # Streamlit UI
 st.title("Text-to-Speech (TTS) with Hugging Face")
 
 # User input
-text = st.text_area("Enter text to convert to speech:", "Hello, welcome to this Streamlit app!")
+text = st.text_area("Put voice to your text:", "Hello, world!")
 
 # Generate speech on button click
 if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
-            narrated_text = narrator(text)
+            inputs = tokenizer(text, return_tensors="pt")
 
-        # Play the audio
-        st.audio(narrated_text["audio"][0], format="audio/wav", sample_rate=narrated_text["sampling_rate"])
-        st.success("Speech generation complete!")
+            # Generate speech waveform
+            with torch.no_grad():
+                output = model(**inputs).waveform
+
+            # Save and play audio
+            audio_path = "generated_speech.wav"
+            torchaudio.save(audio_path, output, sample_rate=22050)
+            st.audio(audio_path, format="audio/wav")
+            st.success("Speech generation complete!")
     else:
         st.error("Please enter some text to generate speech.")
-
-
 
