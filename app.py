@@ -10,15 +10,33 @@ import os
 REPO_ID = "hexgrad/Kokoro-82M"
 VOICE_DIR = "voices/"
 
-def get_available_voices():
+def get_available_voices_and_languages():
     try:
+        # Fetch all voice files
         files = list_repo_files(REPO_ID)
-        voices = [file.replace(VOICE_DIR, "").replace(".pt", "") 
-                  for file in files if file.startswith(VOICE_DIR) and file.endswith('.pt')]
-        return voices
+        
+        # Extract voice files and their languages
+        voices = [
+            file.replace(VOICE_DIR, "").replace(".pt", "") 
+            for file in files 
+            if file.startswith(VOICE_DIR) and file.endswith('.pt')
+        ]
+        
+        # Create a dictionary to map languages to their voices
+        lang_voices = {}
+        for voice in voices:
+            # Split the voice name to get language code
+            parts = voice.split('_', 1)
+            if len(parts) == 2:
+                lang_code, voice_name = parts
+                if lang_code not in lang_voices:
+                    lang_voices[lang_code] = []
+                lang_voices[lang_code].append(voice)
+        
+        return lang_voices
     except Exception as e:
         st.error(f"Error fetching voices: {e}")
-        return []
+        return {}
 
 def filter_voices_by_language(voices, lang_code):
     # Filter voices that start with the language code prefix
