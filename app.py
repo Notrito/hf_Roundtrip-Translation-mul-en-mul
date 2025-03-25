@@ -2,7 +2,6 @@ import streamlit as st
 from transformers import pipeline
 from diffusers import StableDiffusionPipeline
 import torch
-from PIL import Image
 
 # Load the Stable Diffusion model
 model_id = "sd-legacy/stable-diffusion-v1-5"
