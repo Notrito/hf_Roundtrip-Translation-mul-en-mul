@@ -1,27 +1,30 @@
 import streamlit as st
 from transformers import pipeline
-from diffusers import StableDiffusionPipeline
-import torch
+
+# Load the text-to-speech model
+@st.cache_resource
+def load_tts_model():
+    return pipeline("text-to-speech", model="./models/kakao-enterprise/vits-ljs")
+
+narrator = load_tts_model()
+
+# Streamlit UI
+st.title("Text-to-Speech (TTS) with Hugging Face")
+
+# User input
+text = st.text_area("Enter text to convert to speech:", "Hello, welcome to this Streamlit app!")
+
+# Generate speech on button click
+if st.button("Generate Speech"):
+    if text.strip():
+        with st.spinner("Generating audio..."):
+            narrated_text = narrator(text)
+
+        # Play the audio
+        st.audio(narrated_text["audio"][0], format="audio/wav", sample_rate=narrated_text["sampling_rate"])
+        st.success("Speech generation complete!")
+    else:
+        st.error("Please enter some text to generate speech.")
 
 
-# Load the Stable Diffusion model
-model_id = "sd-legacy/stable-diffusion-v1-5"
-
-pipe = StableDiffusionPipeline.from_pretrained(model_id)
-pipe = pipe.to("cpu")
-
-# Streamlit user input for the prompt
-st.title("Stable Diffusion with Streamlit")
-st.write("Generate an image based on a text prompt.")
-
-# Prompt input field
-prompt = st.text_input("Enter your prompt:", "a photo of a beautiful smile")
-
-if st.button("Generate Image"):
-    # Generate the image
-    with st.spinner("Generating..."):
-        image = pipe(prompt).images[0]  
-    
-    # Display the generated image
-    st.image(image, caption="Generated Image", use_column_width=True)
 
