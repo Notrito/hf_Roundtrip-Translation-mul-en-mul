@@ -20,8 +20,7 @@ if selected_option == 'Alice':
     selected_option = 'bf_alice'
 if selected_option == 'Emma':
     selected_option = 'bf_emma'
-    bf_alice	🚺	C	MM minutes	D	d292651b
-bf_emma
+
 # Load the text-to-speech model
 @st.cache_resource
 def load_pipeline():
