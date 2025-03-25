@@ -3,23 +3,30 @@ import torch
 import soundfile as sf
 from kokoro import KPipeline
 
-lang_options = ['a', 'b']
-selected_lang = st.selectbox("Select language", lang_options)
-# Define options for the dropdown
-options = ['Bella', 'Nicole', 'Sarah', 'Alice', 'Emma']
+# Define language options
+lang_options = ["a", "b"]
 
-# Create a dropdown menu
-selected_option = st.selectbox("Select an option", options)
-if selected_option == 'Bella':
-    selected_option = 'af_bella'
-if selected_option == 'Nicole':
-    selected_option = 'af_nicole'
-if selected_option == 'Sarah':
-    selected_option = 'af_sarah'
-if selected_option == 'Alice':
-    selected_option = 'bf_alice'
-if selected_option == 'Emma':
-    selected_option = 'bf_emma'
+
+lang_options = {
+    "English (USA)" : "a",
+    "English (Britain)" : "b"
+}
+selected_lang = st.selectbox("Select language", list(lang_options.keys()))
+# Define voice options based on selected language
+voice_options = {
+    "a": {"Bella": "af_bella", "Nicole": "af_nicole", "Sarah": "af_sarah"},
+    "b": {"Alice": "bf_alice", "Emma": "bf_emma"},
+}
+
+# Get available voices for selected language
+available_voices = voice_options.get(selected_lang, {})
+
+# Show second dropdown only if the first selection is valid
+if available_voices:
+    selected_voice = st.selectbox("Select a voice", list(available_voices.keys()))
+    mapped_voice = available_voices[selected_voice]
+    
+    st.write(f"🔹 Selected Voice Code: `{mapped_voice}`")
 
 # Load the text-to-speech model
 @st.cache_resource
