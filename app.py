@@ -3,7 +3,7 @@ import torch
 import soundfile as sf
 from kokoro import KPipeline
 from kokoro.pipeline import LANG_CODES
-from huggingface_hub import hf_hub_download, list_repo_files
+from huggingface_hub import list_repo_files
 import os
 
 # Hugging Face repo details
@@ -37,13 +37,23 @@ def get_available_voices_and_languages():
     except Exception as e:
         st.error(f"Error fetching voices: {e}")
         return {}
-    
+
+# Get available voices organized by language
+lang_voices = get_available_voices_and_languages()
+
+# Convert LANG_CODES dictionary to a usable format for Streamlit
+# Filter to only include languages with available voices
+lang_options = {f"{LANG_CODES.get(code, code)} ({code})": code 
+                for code in lang_voices.keys() 
+                if code in LANG_CODES}
+
 def download_voice_file(voice_name):
     try:
         # Ensure voices directory exists
         os.makedirs("voices", exist_ok=True)
         
-        # Download the voice file
+        # Construct the full path for the voice file
+        from huggingface_hub import hf_hub_download
         voice_path = hf_hub_download(
             repo_id=REPO_ID, 
             filename=f"voices/{voice_name}.pt",
@@ -55,19 +65,28 @@ def download_voice_file(voice_name):
         st.error(f"Error downloading voice file {voice_name}: {e}")
         return None
 
-# Get available voices organized by language
-lang_voices = get_available_voices_and_languages()
-
-# Convert LANG_CODES dictionary to a usable format for Streamlit
-lang_options = {f"{name} ({code})": code for code, name in LANG_CODES.items() if code in lang_voices}
-
 def main():
     st.title("Text-to-Speech (TTS) with Kokoro")
 
+    # Check if any languages are available
+    if not lang_options:
+        st.error("No languages or voices are currently available.")
+        return
+
     # Language selection
-    selected_lang_name = st.selectbox("Select language", list(lang_options.keys()))
-    selected_lang = lang_options[selected_lang_name]
-    
+    selected_lang_name = st.selectbox(
+        "Select language", 
+        list(lang_options.keys()),
+        index=0 if len(lang_options) > 0 else None
+    )
+
+    # Safely get the language code
+    try:
+        selected_lang = lang_options[selected_lang_name]
+    except (KeyError, TypeError):
+        st.error("Please select a valid language.")
+        return
+
     # Voice selection based on selected language
     if selected_lang in lang_voices:
         # Get voices for the selected language
@@ -79,8 +98,9 @@ def main():
         st.write(f"🔹 Selected Language Code: `{selected_lang}`")
         st.write(f"🔹 Selected Voice: `{selected_voice}`")
     else:
-        st.warning(f"No voices available for {selected_lang_name}.")
+        st.warning(f"No voices available for the selected language.")
         return
+
     # User input
     text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
 
