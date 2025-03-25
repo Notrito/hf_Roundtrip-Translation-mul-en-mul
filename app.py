@@ -3,9 +3,6 @@ import torch
 import soundfile as sf
 from kokoro import KPipeline
 
-# Define language options
-lang_options = ["a", "b"]
-
 
 lang_options = {
     "English (USA)" : "a",
