@@ -4,11 +4,16 @@ import soundfile as sf
 from kokoro import KPipeline
 
 # Define options for the dropdown
-options = ['af_bella', 'af_nicole', 'af_sarah']
+options = ['Bella', 'Nicole', 'Sarah']
 
 # Create a dropdown menu
 selected_option = st.selectbox("Select an option", options)
-
+if selected_option == 'Bella':
+    selected_option = 'af_bella'
+if selected_option == 'Nicole':
+    selected_option = 'af_nicole'
+if selected_option == 'Sarah':
+    selected_option = 'af_sarah'
 # Load the text-to-speech model
 @st.cache_resource
 def load_pipeline():
