@@ -2,7 +2,7 @@ import streamlit as st
 import torch
 import soundfile as sf
 from kokoro import KPipeline
-from kokoro.pipeline import LANG_CODES, VOICES  # Import available language codes & voices
+from kokoro.pipeline import LANG_CODES  # Import available language codes & voices
 
 # Convert LANG_CODES dictionary to a usable format for Streamlit
 lang_options = {f"{name} ({code})": code for code, name in LANG_CODES.items()}
@@ -11,17 +11,16 @@ lang_options = {f"{name} ({code})": code for code, name in LANG_CODES.items()}
 selected_lang_name = st.selectbox("Select language", list(lang_options.keys()))
 selected_lang = lang_options[selected_lang_name]  # Convert selection to language code
 
-# Fetch available voices for selected language
-available_voices = VOICES.get(selected_lang, {})
+# Initialize pipeline to fetch available voices
+pipeline = KPipeline(lang_code=selected_lang)
+available_voices = pipeline.get_available_voices()  # Get voices dynamically
 
 # Show second dropdown only if voices exist
 if available_voices:
-    voice_options = {name: voice_code for voice_code, name in available_voices.items()}
-    selected_voice_name = st.selectbox("Select a voice", list(voice_options.keys()))
-    selected_voice = voice_options[selected_voice_name]
-
+    selected_voice = st.selectbox("Select a voice", available_voices)
+    
     st.write(f"🔹 Selected Language Code: `{selected_lang}`")
-    st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
+    st.write(f"🔹 Selected Voice: `{selected_voice}`")
 else:
     st.warning("No voices available for this language.")
 
