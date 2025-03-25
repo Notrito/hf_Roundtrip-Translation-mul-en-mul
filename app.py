@@ -2,6 +2,7 @@ import streamlit as st
 from transformers import VitsModel, AutoTokenizer
 import torch
 import torchaudio
+from phonemizer import phonemize
 
 # Load the text-to-speech model
 @st.cache_resource
@@ -23,7 +24,7 @@ if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
             # Manually apply phonemization (bypasses system `espeak` dependency)
-            phonemes = phonemizer_backend.phonemize([text], strip=True)[0]
+            phonemes = phonemize(text, language="en-us", backend="espeak", strip=True)
 
             # Tokenize with phonemes
             inputs = tokenizer(phonemes, return_tensors="pt")
