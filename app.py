@@ -4,16 +4,32 @@ import soundfile as sf
 from kokoro import KPipeline
 from kokoro.pipeline import LANG_CODES  # Import available language codes & voices
 
+from huggingface_hub import list_repo_files  # Import function to fetch files from HF Hub
+
+# Hugging Face repo details
+REPO_ID = "hexgrad/Kokoro-82M"
+VOICE_DIR = "voices/"
+
+# Function to fetch available voices from the repo
+def get_available_voices():
+    try:
+        files = list_repo_files(REPO_ID)  # Fetch all files in the repo
+        voices = [file.replace(VOICE_DIR, "").replace(".json", "") 
+                  for file in files if file.startswith(VOICE_DIR)]
+        return voices
+    except Exception as e:
+        st.error(f"Error fetching voices: {e}")
+        return []
+
+# Fetch available voices dynamically
+available_voices = get_available_voices()
+
 # Convert LANG_CODES dictionary to a usable format for Streamlit
 lang_options = {f"{name} ({code})": code for code, name in LANG_CODES.items()}
 
 # Dropdown for language selection
 selected_lang_name = st.selectbox("Select language", list(lang_options.keys()))
 selected_lang = lang_options[selected_lang_name]  # Convert selection to language code
-
-# Initialize pipeline to fetch available voices
-pipeline = KPipeline(lang_code=selected_lang)
-available_voices = pipeline.get_available_voices()  # Get voices dynamically
 
 # Show second dropdown only if voices exist
 if available_voices:
