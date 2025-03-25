@@ -20,6 +20,11 @@ def get_available_voices():
         st.error(f"Error fetching voices: {e}")
         return []
 
+def filter_voices_by_language(voices, lang_code):
+    # Filter voices that start with the language code prefix
+    lang_prefix = f"{lang_code}_"
+    return [voice for voice in voices if voice.startswith(lang_prefix)]
+    
 def download_voice_file(voice_name):
     try:
         # Ensure voices directory exists
@@ -49,10 +54,13 @@ def main():
     # Language selection
     selected_lang_name = st.selectbox("Select language", list(lang_options.keys()))
     selected_lang = lang_options[selected_lang_name]
+    
+    # Filter voices for the selected language
+    lang_specific_voices = filter_voices_by_language(available_voices, selected_lang)
 
     # Voice selection
     if available_voices:
-        selected_voice = st.selectbox("Select a voice", available_voices)
+        selected_voice = st.selectbox("Select a voice", lang_specific_voices)
         st.write(f"🔹 Selected Language Code: `{selected_lang}`")
         st.write(f"🔹 Selected Voice: `{selected_voice}`")
     else:
