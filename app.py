@@ -7,6 +7,7 @@ import torch
 # Load the Stable Diffusion model
 model_id = "sd-legacy/stable-diffusion-v1-5"
 
+pipe = StableDiffusionPipeline.from_pretrained(model_id)
 pipe = pipe.to("cpu")
 
 # Streamlit user input for the prompt
