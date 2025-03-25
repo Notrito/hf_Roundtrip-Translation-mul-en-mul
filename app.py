@@ -9,7 +9,12 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Load the Stable Diffusion model
 model_id = "sd-legacy/stable-diffusion-v1-5"
-pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+# If using CPU, load without half precision (float16) as it's not supported on CPU
+if device == "cpu":
+    pipe = StableDiffusionPipeline.from_pretrained(model_id)  # Default precision (float32)
+else:
+    pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
+
 pipe = pipe.to(device)
 
 # Streamlit user input for the prompt
