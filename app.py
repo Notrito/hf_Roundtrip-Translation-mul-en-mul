@@ -22,7 +22,11 @@ text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
 if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
-            inputs = tokenizer(text, return_tensors="pt", phonemize=False)
+            # Manually apply phonemization (bypasses system `espeak` dependency)
+            phonemes = phonemizer_backend.phonemize([text], strip=True)[0]
+
+            # Tokenize with phonemes
+            inputs = tokenizer(phonemes, return_tensors="pt")
 
             # Generate speech waveform
             with torch.no_grad():
@@ -34,7 +38,7 @@ if st.button("Generate Speech"):
             st.audio(audio_path, format="audio/wav")
             st.success("Speech generation complete!")
 
-             # Option to download
+            # Option to download
             with open(audio_path, "rb") as f:
                 st.download_button("Download Audio", f, file_name="speech.wav", mime="audio/wav")
 
