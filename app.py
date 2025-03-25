@@ -23,11 +23,8 @@ text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
 if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
-            # Manually apply phonemization (bypasses system `espeak` dependency)
-            phonemes = phonemize(text, language="en-us", backend="festival", strip=True)
-
-            # Tokenize with phonemes
-            inputs = tokenizer(phonemes, return_tensors="pt")
+            # Tokenize raw text (no phonemes because hugging face dependencies)
+            inputs = tokenizer(text, return_tensors="pt")
 
             # Generate speech waveform
             with torch.no_grad():
