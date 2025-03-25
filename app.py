@@ -3,26 +3,18 @@ from transformers import pipeline
 from diffusers import StableDiffusionPipeline
 import torch
 
-# Check if CUDA (GPU) is available
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
 
 # Load the Stable Diffusion model
 model_id = "sd-legacy/stable-diffusion-v1-5"
-# If using CPU, load without half precision (float16) as it's not supported on CPU
-if device == "cpu":
-    pipe = StableDiffusionPipeline.from_pretrained(model_id)  # Default precision (float32)
-else:
-    pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
 
-pipe = pipe.to(device)
+pipe = pipe.to("cpu")
 
 # Streamlit user input for the prompt
 st.title("Stable Diffusion with Streamlit")
 st.write("Generate an image based on a text prompt.")
 
 # Prompt input field
-prompt = st.text_input("Enter your prompt:", "a photo of an astronaut riding a horse on mars")
+prompt = st.text_input("Enter your prompt:", "a photo of a beautiful smile")
 
 if st.button("Generate Image"):
     # Generate the image
