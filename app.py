@@ -2,28 +2,28 @@ import streamlit as st
 import torch
 import soundfile as sf
 from kokoro import KPipeline
+from kokoro.pipeline import LANG_CODES, VOICES  # Import available language codes & voices
 
+# Convert LANG_CODES dictionary to a usable format for Streamlit
+lang_options = {f"{name} ({code})": code for code, name in LANG_CODES.items()}
 
-lang_options = {
-    "English (USA)" : "a",
-    "English (Britain)" : "b"
-}
-selected_lang = st.selectbox("Select language", list(lang_options.keys()))
-# Define voice options based on selected language
-voice_options = {
-    "a": {"Bella": "af_bella", "Nicole": "af_nicole", "Sarah": "af_sarah"},
-    "b": {"Alice": "bf_alice", "Emma": "bf_emma"},
-}
+# Dropdown for language selection
+selected_lang_name = st.selectbox("Select language", list(lang_options.keys()))
+selected_lang = lang_options[selected_lang_name]  # Convert selection to language code
 
-# Get available voices for selected language
-available_voices = voice_options.get(selected_lang, {})
+# Fetch available voices for selected language
+available_voices = VOICES.get(selected_lang, {})
 
-# Show second dropdown only if the first selection is valid
+# Show second dropdown only if voices exist
 if available_voices:
-    selected_voice = st.selectbox("Select a voice", list(available_voices.keys()))
-    mapped_voice = available_voices[selected_voice]
-    
-    st.write(f"🔹 Selected Voice Code: `{mapped_voice}`")
+    voice_options = {name: voice_code for voice_code, name in available_voices.items()}
+    selected_voice_name = st.selectbox("Select a voice", list(voice_options.keys()))
+    selected_voice = voice_options[selected_voice_name]
+
+    st.write(f"🔹 Selected Language Code: `{selected_lang}`")
+    st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
+else:
+    st.warning("No voices available for this language.")
 
 # Load the text-to-speech model
 @st.cache_resource
