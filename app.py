@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import pipeline
+from transformers import VitsModel, AutoTokenizer
 
 # Load the text-to-speech model
 @st.cache_resource
