@@ -24,7 +24,3 @@ if st.button("Generate Image"):
     # Display the generated image
     st.image(image, caption="Generated Image", use_column_width=True)
 
-    # Save the image locally
-    image.save("generated_image.png")
-    st.success("Image saved as 'generated_image.png'")
-
