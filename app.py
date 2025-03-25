@@ -4,10 +4,10 @@ import soundfile as sf
 from kokoro import KPipeline
 
 # Define options for the dropdown
-options = ['a', 'e', 'f', 'h', 'i', 'p']
+options = ['af_bella', 'af_nicole', 'af_sarah']
 
 # Create a dropdown menu
-selected_option = st.selectbox("Select an option", options)
+selected_option = st.selectbox("Select an option", "a")
 
 # Load the text-to-speech model
 @st.cache_resource
@@ -26,7 +26,7 @@ text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
 if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
-            generator = pipeline(text, voice="af_heart")
+            generator = pipeline(text, voice=options)
 
             audio_data = None
             for i, (gs, ps, audio) in enumerate(generator):
