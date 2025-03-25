@@ -1,20 +1,17 @@
 import streamlit as st
-from transformers import AutoModelForTextToSpeech, AutoProcessor
 import torch
-import torchaudio
-from phonemizer import phonemize
+import soundfile as sf
+from kokoro import KPipeline
 
 # Load the text-to-speech model
 @st.cache_resource
-def load_model():
-    model = AutoModelForTextToSpeech.from_pretrained("facebook/mms-tts-eng")
-    processor = AutoProcessor.from_pretrained("facebook/mms-tts-eng")
-    return model, processor
+def load_pipeline():
+    return KPipeline(lang_code="a")
 
-model, tokenizer = load_model()
+pipeline = load_pipeline()
 
 # Streamlit UI
-st.title("Text-to-Speech (TTS) with Hugging Face")
+st.title("Text-to-Speech (TTS) with Kokoro")
 
 # User input
 text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
@@ -23,23 +20,25 @@ text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
 if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
-            # Tokenize raw text (no phonemes because hugging face dependencies)
-            inputs = tokenizer(text, return_tensors="pt")
+            generator = pipeline(text, voice="af_heart")
 
-            # Generate speech waveform
-            with torch.no_grad():
-                output = model(**inputs).waveform
+            audio_data = None
+            for i, (gs, ps, audio) in enumerate(generator):
+                audio_data = audio  # Save last audio chunk
 
-            # Save and play audio
-            audio_path = "generated_speech.wav"
-            torchaudio.save(audio_path, output, sample_rate=22050)
-            st.audio(audio_path, format="audio/wav")
+            if audio_data is not None:
+                # Save and play audio
+                audio_path = "generated_speech.wav"
+                sf.write(audio_path, audio_data, 24000)
+                st.audio(audio_path, format="audio/wav")
             
-            st.success("Speech generation complete!")
-
-            # Option to download
-            with open(audio_path, "rb") as f:
-                st.download_button("Download Audio", f, file_name="speech.wav", mime="audio/wav")
+                st.success("Speech generation complete!")
+    
+                # Option to download
+                with open(audio_path, "rb") as f:
+                    st.download_button("Download Audio", f, file_name="speech.wav", mime="audio/wav")
+            else:
+                st.error("Failed to generate audio.")
 
     else:
         st.error("Please enter some text to generate speech.")
