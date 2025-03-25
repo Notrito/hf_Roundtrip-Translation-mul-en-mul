@@ -3,10 +3,14 @@ from transformers import pipeline
 from diffusers import StableDiffusionPipeline
 import torch
 
+# Check if CUDA (GPU) is available
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
 # Load the Stable Diffusion model
 model_id = "sd-legacy/stable-diffusion-v1-5"
 pipe = StableDiffusionPipeline.from_pretrained(model_id, torch_dtype=torch.float16)
-pipe = pipe.to("cuda")
+pipe = pipe.to(device)
 
 # Streamlit user input for the prompt
 st.title("Stable Diffusion with Streamlit")
