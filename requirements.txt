@@ -1,6 +1,7 @@
 streamlit
 transformers
 torch
+torchaudio
 transformers
 timm
 inflect
