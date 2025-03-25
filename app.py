@@ -1,5 +1,5 @@
 import streamlit as st
-from transformers import VitsModel, AutoTokenizer
+from transformers import AutoModelForTextToSpeech, AutoProcessor
 import torch
 import torchaudio
 from phonemizer import phonemize
