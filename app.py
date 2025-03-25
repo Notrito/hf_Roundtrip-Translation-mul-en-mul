@@ -7,9 +7,9 @@ from phonemizer import phonemize
 # Load the text-to-speech model
 @st.cache_resource
 def load_model():
-    model = VitsModel.from_pretrained("kakao-enterprise/vits-ljs")
-    tokenizer = AutoTokenizer.from_pretrained("kakao-enterprise/vits-ljs")
-    return model, tokenizer
+    model = AutoModelForTextToSpeech.from_pretrained("facebook/mms-tts-eng")
+    processor = AutoProcessor.from_pretrained("facebook/mms-tts-eng")
+    return model, processor
 
 model, tokenizer = load_model()
 
@@ -34,6 +34,7 @@ if st.button("Generate Speech"):
             audio_path = "generated_speech.wav"
             torchaudio.save(audio_path, output, sample_rate=22050)
             st.audio(audio_path, format="audio/wav")
+            
             st.success("Speech generation complete!")
 
             # Option to download
