@@ -55,10 +55,9 @@ available_voices = voice_options.get(selected_lang, {})
 
 # Show second dropdown only if the first selection is valid
 if available_voices:
-    selected_voice = st.selectbox("Select a voice", list(available_voices.values()))
-    mapped_voice = available_voices[selected_voice]   # VOICE
+    selected_voice = st.selectbox("Select a voice", list(available_voices.keys()))  #VOICE
     
-    st.write(f"🔹 Selected Voice Code: `{mapped_voice}`")
+    st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
 
 # Load the text-to-speech model
 @st.cache_resource
@@ -77,7 +76,7 @@ text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
 if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
-            generator = pipeline(text, voice=mapped_voice )  # CHANGE VOICE
+            generator = pipeline(text, voice=selected_voice )  # CHANGE VOICE
 
             audio_data = None
             for i, (gs, ps, audio) in enumerate(generator):
