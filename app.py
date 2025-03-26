@@ -7,6 +7,7 @@ from kokoro.pipeline import LANG_CODES
 # Define language options
 lang_options = {f"{name}": code for code, name in LANG_CODES.items()}
 selected_lang = st.selectbox("Select language", list(lang_options.values()))   # LANGUAGE
+sel = lang_options[selected_lang]
 
 # Define voice options based on selected language
 voice_options = {
