@@ -77,7 +77,7 @@ text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
 if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
-            generator = pipeline(text, voice=selected_option)
+            generator = pipeline(text, voice=selected_voice)
 
             audio_data = None
             for i, (gs, ps, audio) in enumerate(generator):
