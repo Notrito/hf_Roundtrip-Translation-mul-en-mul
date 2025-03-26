@@ -7,7 +7,7 @@ from kokoro.pipeline import LANG_CODES
 # Define language options
 lang_options = {f"{name}": code for code, name in LANG_CODES.items()}
 selected_lang = st.selectbox("Select language", list(lang_options.keys()))   # LANGUAGE
-sel = lang_options[selected_lang]
+code_lang = lang_options[selected_lang]
 
 # Define voice options based on selected language
 voice_options = {
@@ -51,7 +51,7 @@ voice_options = {
 
 
 # Get available voices for selected language
-available_voices = voice_options.get(selected_lang, {})
+available_voices = voice_options.get(code_lang, {})
 
 # Show second dropdown only if the first selection is valid
 if available_voices:
