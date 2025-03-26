@@ -55,8 +55,8 @@ available_voices = voice_options.get(selected_lang, {})
 
 # Show second dropdown only if the first selection is valid
 if available_voices:
-    selected_voice = list(available_voices.values())  #VOICE
-    name_voice = selected_voice = st.selectbox("Select a voice", list(available_voices.keys()))
+    name_voice = st.selectbox("Select a voice", list(available_voices.keys()))
+    selected_voice = available_voices[name_voice] # VOICE
     st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
 
 # Load the text-to-speech model
