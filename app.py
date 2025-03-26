@@ -2,145 +2,109 @@ import streamlit as st
 import torch
 import soundfile as sf
 from kokoro import KPipeline
-from kokoro.pipeline import LANG_CODES
-from huggingface_hub import list_repo_files
-import os
 
-# Hugging Face repo details
-REPO_ID = "hexgrad/Kokoro-82M"
-VOICE_DIR = "voices/"
+# Define language options
+lang_options = {
+    "English (USA)": "a",
+    "English (Britain)": "b",
+    "Japanese": "j",
+    "Mandarin Chinese": "z",
+    "Spanish": "e",
+    "French": "f",
+    "Hindi": "h",
+    "Italian": "i",
+    "Brazilian Portuguese": "p"
+}
 
-def get_available_voices_and_languages():
-    try:
-        # Fetch all voice files
-        files = list_repo_files(REPO_ID)
-        
-        # Extract voice files and their languages
-        voices = [
-            file.replace(VOICE_DIR, "").replace(".pt", "") 
-            for file in files 
-            if file.startswith(VOICE_DIR) and file.endswith('.pt')
-        ]
-        
-        # Create a dictionary to map languages to their voices
-        lang_voices = {}
-        for voice in voices:
-            # Split the voice name to get language code
-            parts = voice.split('_', 1)
-            if len(parts) == 2:
-                lang_code, voice_name = parts
-                if lang_code not in lang_voices:
-                    lang_voices[lang_code] = []
-                lang_voices[lang_code].append(voice)
-        
-        return lang_voices
-    except Exception as e:
-        st.error(f"Error fetching voices: {e}")
-        return {}
+selected_lang = st.selectbox("Select language", list(lang_options.keys()))
 
-# Get available voices organized by language
-lang_voices = get_available_voices_and_languages()
+# Define voice options based on selected language
+voice_options = {
+    "a": {
+        "Heart": "af_heart", "Alloy": "af_alloy", "Aoede": "af_aoede",
+        "Bella": "af_bella", "Jessica": "af_jessica", "Kore": "af_kore",
+        "Nicole": "af_nicole", "Nova": "af_nova", "River": "af_river",
+        "Sarah": "af_sarah", "Sky": "af_sky",
+        "Adam": "am_adam", "Echo": "am_echo", "Eric": "am_eric",
+        "Fenrir": "am_fenrir", "Liam": "am_liam", "Michael": "am_michael",
+        "Onyx": "am_onyx", "Puck": "am_puck", "Santa": "am_santa"
+    },
+    "b": {
+        "Alice": "bf_alice", "Emma": "bf_emma", "Isabella": "bf_isabella", "Lily": "bf_lily",
+        "Daniel": "bm_daniel", "Fable": "bm_fable", "George": "bm_george", "Lewis": "bm_lewis"
+    },
+    "j": {
+        "Alpha": "jf_alpha", "Gongitsune": "jf_gongitsune", "Nezumi": "jf_nezumi", 
+        "Tebukuro": "jf_tebukuro", "Kumo": "jm_kumo"
+    },
+    "z": {
+        "Xiaobei": "zf_xiaobei", "Xiaoni": "zf_xiaoni", "Xiaoxiao": "zf_xiaoxiao", "Xiaoyi": "zf_xiaoyi",
+        "Yunjian": "zm_yunjian", "Yunxi": "zm_yunxi", "Yunxia": "zm_yunxia", "Yunyang": "zm_yunyang"
+    },
+    "e": {
+        "Dora": "ef_dora", "Alex": "em_alex", "Santa": "em_santa"
+    },
+    "f": {
+        "Siwis": "ff_siwis"
+    },
+    "h": {
+        "Alpha": "hf_alpha", "Beta": "hf_beta", "Omega": "hm_omega", "Psi": "hm_psi"
+    },
+    "i": {
+        "Sara": "if_sara", "Nicola": "im_nicola"
+    },
+    "p": {
+        "Dora": "pf_dora", "Alex": "pm_alex", "Santa": "pm_santa"
+    }
+}
 
-# Convert LANG_CODES dictionary to a usable format for Streamlit
-# Filter to only include languages with available voices
-lang_options = {f"{LANG_CODES.get(code, code)} ({code})": code 
-                for code in lang_voices.keys() 
-                if code in LANG_CODES}
 
-def download_voice_file(voice_name):
-    try:
-        # Ensure voices directory exists
-        os.makedirs("voices", exist_ok=True)
-        
-        # Construct the full path for the voice file
-        from huggingface_hub import hf_hub_download
-        voice_path = hf_hub_download(
-            repo_id=REPO_ID, 
-            filename=f"voices/{voice_name}.pt",
-            local_dir="voices",
-            local_dir_use_symlinks=False
-        )
-        return voice_path
-    except Exception as e:
-        st.error(f"Error downloading voice file {voice_name}: {e}")
-        return None
+# Get available voices for selected language
+available_voices = voice_options.get(selected_lang, {})
 
-def main():
-    st.title("Text-to-Speech (TTS) with Kokoro")
+# Show second dropdown only if the first selection is valid
+if available_voices:
+    selected_voice = st.selectbox("Select a voice", list(available_voices.keys()))
+    mapped_voice = available_voices[selected_voice]
+    
+    st.write(f"🔹 Selected Voice Code: `{mapped_voice}`")
 
-    # Check if any languages are available
-    if not lang_options:
-        st.error("No languages or voices are currently available.")
-        return
+# Load the text-to-speech model
+@st.cache_resource
+def load_pipeline():
+    return KPipeline(lang_code=selected_lang)
 
-    # Language selection
-    selected_lang_name = st.selectbox(
-        "Select language", 
-        list(lang_options.keys()),
-        index=0 if len(lang_options) > 0 else None
-    )
+pipeline = load_pipeline()
 
-    # Safely get the language code
-    try:
-        selected_lang = lang_options[selected_lang_name]
-    except (KeyError, TypeError):
-        st.error("Please select a valid language.")
-        return
+# Streamlit UI
+st.title("Text-to-Speech (TTS) with Kokoro")
 
-    # Voice selection based on selected language
-    if selected_lang in lang_voices:
-        # Get voices for the selected language
-        lang_specific_voices = lang_voices[selected_lang]
-        
-        # Voice selection dropdown
-        selected_voice = st.selectbox("Select a voice", lang_specific_voices)
-        
-        st.write(f"🔹 Selected Language Code: `{selected_lang}`")
-        st.write(f"🔹 Selected Voice: `{selected_voice}`")
+# User input
+text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
+
+# Generate speech on button click
+if st.button("Generate Speech"):
+    if text.strip():
+        with st.spinner("Generating audio..."):
+            generator = pipeline(text, voice=selected_option)
+
+            audio_data = None
+            for i, (gs, ps, audio) in enumerate(generator):
+                audio_data = audio  # Save last audio chunk
+
+            if audio_data is not None:
+                # Save and play audio
+                audio_path = "generated_speech.wav"
+                sf.write(audio_path, audio_data, 24000)
+                st.audio(audio_path, format="audio/wav")
+            
+                st.success("Speech generation complete!")
+    
+                # Option to download
+                with open(audio_path, "rb") as f:
+                    st.download_button("Download Audio", f, file_name="speech.wav", mime="audio/wav")
+            else:
+                st.error("Failed to generate audio.")
+
     else:
-        st.warning(f"No voices available for the selected language.")
-        return
-
-    # User input
-    text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
-
-    # Generate speech on button click
-    if st.button("Generate Speech"):
-        if text.strip():
-            with st.spinner("Preparing voice model..."):
-                # Download voice file if not already present
-                voice_file_path = download_voice_file(selected_voice)
-                
-                if voice_file_path:
-                    try:
-                        # Load the text-to-speech model with the specific voice
-                        pipeline = KPipeline(lang_code=selected_lang)
-                        
-                        with st.spinner("Generating audio..."):
-                            generator = pipeline(text, voice=selected_voice)
-                            audio_data = None
-                            
-                            for i, (gs, ps, audio) in enumerate(generator):
-                                audio_data = audio  # Save last audio chunk
-                            
-                            if audio_data is not None:
-                                # Save and play audio
-                                audio_path = "generated_speech.wav"
-                                sf.write(audio_path, audio_data, 24000)
-                                st.audio(audio_path, format="audio/wav")
-                                st.success("Speech generation complete!")
-                                
-                                # Option to download
-                                with open(audio_path, "rb") as f:
-                                    st.download_button("Download Audio", f, file_name="speech.wav", mime="audio/wav")
-                            else:
-                                st.error("Failed to generate audio.")
-                    except Exception as e:
-                        st.error(f"Error in speech generation: {e}")
-                else:
-                    st.error("Failed to download voice file.")
-        else:
-            st.error("Please enter some text to generate speech.")
-
-if __name__ == "__main__":
-    main()
+        st.error("Please enter some text to generate speech.")
