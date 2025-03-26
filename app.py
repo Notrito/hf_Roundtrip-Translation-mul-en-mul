@@ -6,8 +6,8 @@ from kokoro.pipeline import LANG_CODES
 
 # Define language options
 lang_options = {f"{name}": code for code, name in LANG_CODES.items()}
-selected_lang = st.selectbox("Select language", list(lang_options.keys()))   # LANGUAGE
-code_lang = lang_options[selected_lang]
+selected_lang = st.selectbox("Select language", list(lang_options.keys())) 
+code_lang = lang_options[selected_lang] # LANGUAGE
 
 # Define voice options based on selected language
 voice_options = {
@@ -62,7 +62,7 @@ if available_voices:
 # Load the text-to-speech model
 @st.cache_resource
 def load_pipeline():
-    return KPipeline(lang_code=selected_lang)
+    return KPipeline(lang_code=code_lang)  # LANGUAGE
 
 pipeline = load_pipeline()
 
