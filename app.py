@@ -12,8 +12,8 @@ selected_lang = st.selectbox("Select language", list(lang_options.keys()))
 code_lang = lang_options[selected_lang]
 
 # Print language confirmation
-st.write(f"🔹 Selected Language: {selected_lang}")
-st.write(f"🔹 Language Code: `{code_lang}`")
+# st.write(f"🔹 Selected Language: {selected_lang}")
+# st.write(f"🔹 Language Code: `{code_lang}`")
 
 # Define voice options based on selected language
 voice_options = {
@@ -65,7 +65,7 @@ if available_voices:
     selected_voice = available_voices[name_voice] # VOICE
 
     # Print voice confirmation
-    st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
+    # st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
 else:
     st.error("No voices available for the selected language.")
     
@@ -77,10 +77,10 @@ def load_pipeline():
 pipeline = load_pipeline()
 
 # Streamlit UI
-st.title("Text-to-Speech (TTS) with Kokoro")
+st.title("Kokoro-TTS all languages")
 
 # User input
-text = st.text_area("Put voice to your text 🎙️:", "Hello, fills de puta!")
+text = st.text_area("Put voice to your text 🎙️:", "Mix text and selected languages for some funny accents")
 
 # Generate speech on button click
 if st.button("Generate Speech"):
