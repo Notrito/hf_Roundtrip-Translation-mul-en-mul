@@ -64,13 +64,13 @@ if available_voices:
 def load_pipeline():
     return KPipeline(lang_code=selected_lang)
 
-pipeline = load_pipeline()
+pipeline = load_pipeline(selected_lang)
 
 # Streamlit UI
 st.title("Text-to-Speech (TTS) with Kokoro")
 
 # User input
-text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
+text = st.text_area("Put voice to your text 🎙️:", "Hello, fills de puta!")
 
 # Generate speech on button click
 if st.button("Generate Speech"):
