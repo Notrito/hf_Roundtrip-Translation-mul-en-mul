@@ -4,6 +4,12 @@ import soundfile as sf
 from kokoro import KPipeline
 from kokoro.pipeline import LANG_CODES
 
+
+# Streamlit UI
+st.title("Kokoro-TTS all languages")
+st.markdown("## Text to Speech")
+st.markdown("# Mix text and selected languages for some funny accents")
+
 # Create language options dictionary
 lang_options = {f"{name}": code for code, name in LANG_CODES.items()}
 
@@ -76,11 +82,10 @@ def load_pipeline():
 
 pipeline = load_pipeline()
 
-# Streamlit UI
-st.title("Kokoro-TTS all languages")
+
 
 # User input
-text = st.text_area("Put voice to your text 🎙️:", "Mix text and selected languages for some funny accents")
+text = st.text_area("Put voice to your text 🎙️:", "Here your text")
 
 # Generate speech on button click
 if st.button("Generate Speech"):
