@@ -2,6 +2,7 @@ import streamlit as st
 import torch
 import soundfile as sf
 from kokoro import KPipeline
+from kokoro.pipeline import LANG_CODES
 
 # Define language options
 lang_options = {f"{name} ({code})": code for code, name in LANG_CODES.items()}
