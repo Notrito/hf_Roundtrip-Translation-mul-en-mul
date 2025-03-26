@@ -55,8 +55,8 @@ available_voices = voice_options.get(selected_lang, {})
 
 # Show second dropdown only if the first selection is valid
 if available_voices:
-    selected_voice = st.selectbox("Select a voice", list(available_voices.keys()))  #VOICE
-    
+    selected_voice = st.selectbox("Select a voice", list(available_voices.values()))  #VOICE
+    name_voice = selected_voice = st.selectbox("Select a voice", list(available_voices.keys()))
     st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
 
 # Load the text-to-speech model
@@ -64,7 +64,7 @@ if available_voices:
 def load_pipeline():
     return KPipeline(lang_code=selected_lang)
 
-pipeline = load_pipeline(selected_lang)
+pipeline = load_pipeline()
 
 # Streamlit UI
 st.title("Text-to-Speech (TTS) with Kokoro")
