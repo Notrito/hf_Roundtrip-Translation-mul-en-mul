@@ -7,7 +7,7 @@ from kokoro.pipeline import LANG_CODES
 # Define language options
 lang_options = {f"{name} ({code})": code for code, name in LANG_CODES.items()}
 
-selected_lang = st.selectbox("Select language", list(lang_options.values()))
+selected_lang = st.selectbox("Select language", list(lang_options.values()))   # LANGUAGE
 
 # Define voice options based on selected language
 voice_options = {
@@ -56,7 +56,7 @@ available_voices = voice_options.get(selected_lang, {})
 # Show second dropdown only if the first selection is valid
 if available_voices:
     selected_voice = st.selectbox("Select a voice", list(available_voices.values()))
-    mapped_voice = available_voices[selected_voice]
+    mapped_voice = available_voices[selected_voice]   # VOICE
     
     st.write(f"🔹 Selected Voice Code: `{mapped_voice}`")
 
@@ -77,7 +77,7 @@ text = st.text_area("Put voice to your text 🎙️:", "Hello, world!")
 if st.button("Generate Speech"):
     if text.strip():
         with st.spinner("Generating audio..."):
-            generator = pipeline(text, voice=selected_voice)
+            generator = pipeline(text, voice=mapped_voice )  # CHANGE VOICE
 
             audio_data = None
             for i, (gs, ps, audio) in enumerate(generator):
