@@ -4,10 +4,16 @@ import soundfile as sf
 from kokoro import KPipeline
 from kokoro.pipeline import LANG_CODES
 
-# Define language options
+# Create language options dictionary
 lang_options = {f"{name}": code for code, name in LANG_CODES.items()}
-selected_lang = st.selectbox("Select language", list(lang_options.keys())) 
-code_lang = lang_options[selected_lang] # LANGUAGE
+
+# Streamlit language selection
+selected_lang = st.selectbox("Select language", list(lang_options.keys()))
+code_lang = lang_options[selected_lang]
+
+# Print language confirmation
+st.write(f"🔹 Selected Language: {selected_lang}")
+st.write(f"🔹 Language Code: `{code_lang}`")
 
 # Define voice options based on selected language
 voice_options = {
@@ -57,8 +63,12 @@ available_voices = voice_options.get(code_lang, {})
 if available_voices:
     name_voice = st.selectbox("Select a voice", list(available_voices.keys()))
     selected_voice = available_voices[name_voice] # VOICE
-    st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
 
+    # Print voice confirmation
+    st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
+else:
+    st.error("No voices available for the selected language.")
+    
 # Load the text-to-speech model
 @st.cache_resource
 def load_pipeline():
