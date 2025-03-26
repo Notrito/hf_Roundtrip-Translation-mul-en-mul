@@ -4,17 +4,7 @@ import soundfile as sf
 from kokoro import KPipeline
 
 # Define language options
-lang_options = {
-    "English (USA)": "a",
-    "English (Britain)": "b",
-    "Japanese": "j",
-    "Mandarin Chinese": "z",
-    "Spanish": "e",
-    "French": "f",
-    "Hindi": "h",
-    "Italian": "i",
-    "Brazilian Portuguese": "p"
-}
+lang_options = {f"{name} ({code})": code for code, name in LANG_CODES.items()}
 
 selected_lang = st.selectbox("Select language", list(lang_options.keys()))
 
