@@ -5,12 +5,12 @@ import streamlit as st
 def load_models():
     """Load translation models and tokenizers for multilingual translation."""
     try:
-        model_to_en = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-mul-en")
-        tokenizer_to_en = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-mul-en")
+        model_to_en = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
+        tokenizer_to_en = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M")
         
-        model_from_en = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-mul")
-        tokenizer_from_en = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-mul")
-        
+        model_from_en = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
+        tokenizer_from_en = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M")
+    
         return model_to_en, tokenizer_to_en, model_from_en, tokenizer_from_en
     except Exception as e:
         st.error(f"Error loading models: {e}")
