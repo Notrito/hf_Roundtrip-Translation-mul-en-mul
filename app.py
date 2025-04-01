@@ -14,19 +14,27 @@ def load_model(model_name="facebook/nllb-200-distilled-600M"):
         return None, None
 
 def translate(text, model, tokenizer, source_lang, target_lang):
-    """Translate text using NLLB model."""
+    """Translate text using NLLB model with correct BOS token handling."""
     if model is None or tokenizer is None:
         return "Model not loaded."
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     
-    # Format language codes for NLLB
+    # Set the source language
+    tokenizer.src_lang = source_lang
+    
+    # Create input tensors
     inputs = tokenizer(text, return_tensors="pt").to(device)
     
+    # Get the correct forced BOS token ID for the target language
+    # NLLB uses this format instead of lang_code_to_id
+    forced_bos_token_id = tokenizer.convert_tokens_to_ids(target_lang)
+    
+    # Generate translation
     translated_tokens = model.generate(
         **inputs,
-        forced_bos_token_id=tokenizer.lang_code_to_id[target_lang],
+        forced_bos_token_id=forced_bos_token_id,
         max_length=200
     )
     
@@ -115,3 +123,14 @@ if st.button("Translate"):
             st.write(results["back_translation"])
     else:
         st.warning("Please enter text to translate.")
+
+# Add memory cleanup button
+if st.button("Clear Memory Cache"):
+    try:
+        import gc
+        gc.collect()
+        with torch.no_grad():
+            torch.cuda.empty_cache() if torch.cuda.is_available() else None
+        st.success("Memory cache cleared!")
+    except Exception as e:
+        st.error(f"Error clearing memory: {e}")
