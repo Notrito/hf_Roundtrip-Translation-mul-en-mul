@@ -127,6 +127,3 @@ def main():
     
     # Launch the interface
     demo.launch(share=False)
-
-if __name__ == "__main__":
-    main()
