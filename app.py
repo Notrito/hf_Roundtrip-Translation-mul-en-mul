@@ -2,53 +2,50 @@ import torch
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import streamlit as st
 
-def load_models():
-    """Load translation models and tokenizers for multilingual translation."""
+@st.cache_resource
+def load_model(model_name="facebook/nllb-200-distilled-600M"):
+    """Load a single NLLB model that can handle multiple languages."""
     try:
-        # Models for translation to and from English
-        model_to_en = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-mul-en")
-        tokenizer_to_en = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-mul-en")
-        
-        model_from_en = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-mul")
-        tokenizer_from_en = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-mul")
-        
-        return model_to_en, tokenizer_to_en, model_from_en, tokenizer_from_en
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        return model, tokenizer
     except Exception as e:
-        st.error(f"Error loading models: {e}")
-        return None, None, None, None
+        st.error(f"Error loading model: {e}")
+        return None, None
 
-def translate(text, model, tokenizer, src_lang=None, tgt_lang=None):
-    """Translate text using the given model and tokenizer."""
+def translate(text, model, tokenizer, source_lang, target_lang):
+    """Translate text using NLLB model."""
     if model is None or tokenizer is None:
         return "Model not loaded."
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     
-    # The Helsinki-NLP OPUS-MT models don't require src_lang and tgt_lang to be set on the tokenizer
-    # These models are specialized for specific language pairs
-    # So we remove these lines that might be causing issues:
-    # tokenizer.src_lang = src_lang
-    # tokenizer.tgt_lang = tgt_lang
+    # Format language codes for NLLB
+    inputs = tokenizer(text, return_tensors="pt").to(device)
     
-    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True).to(device)
+    translated_tokens = model.generate(
+        **inputs,
+        forced_bos_token_id=tokenizer.lang_code_to_id[target_lang],
+        max_length=200
+    )
     
-    translated_tokens = model.generate(**inputs, max_length=200)
     return tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0]
 
-def roundtrip_translate(text, model_to_en, tokenizer_to_en, model_from_en, tokenizer_from_en, src_lang, tgt_lang):
-    """Perform round-trip translation using two models."""
-    if None in (model_to_en, tokenizer_to_en, model_from_en, tokenizer_from_en):
+def roundtrip_translate(text, model, tokenizer, src_lang, tgt_lang="eng_Latn"):
+    """Perform round-trip translation using NLLB model."""
+    if model is None or tokenizer is None:
         return {
             "original": text,
-            "forward_translation": "Error: Models not loaded.",
-            "back_translation": "Error: Models not loaded."
+            "forward_translation": "Error: Model not loaded.",
+            "back_translation": "Error: Model not loaded."
         }
     
-    # For these OPUS-MT models, we don't need to pass src_lang and tgt_lang parameters
-    # They're already trained for specific language directions
-    forward_translation = translate(text, model_to_en, tokenizer_to_en)
-    back_translation = translate(forward_translation, model_from_en, tokenizer_from_en)
+    # First translation: source -> English
+    forward_translation = translate(text, model, tokenizer, src_lang, tgt_lang)
+    
+    # Second translation: English -> source
+    back_translation = translate(forward_translation, model, tokenizer, tgt_lang, src_lang)
     
     return {
         "original": text,
@@ -56,47 +53,42 @@ def roundtrip_translate(text, model_to_en, tokenizer_to_en, model_from_en, token
         "back_translation": back_translation
     }
 
+# NLLB language codes
+language_options = {
+    "spa_Latn": "Spanish",
+    "fra_Latn": "French",
+    "deu_Latn": "German",
+    "ita_Latn": "Italian",
+    "por_Latn": "Portuguese",
+    "rus_Cyrl": "Russian",
+    "zho_Hans": "Chinese (Simplified)",
+    "jpn_Jpan": "Japanese",
+    "kor_Hang": "Korean",
+    "ara_Arab": "Arabic",
+    "hin_Deva": "Hindi",
+    "eng_Latn": "English"
+}
+
 # Streamlit UI
 st.title("Multilingual Round-Trip Translation App")
 st.write("Translate text to English and back to its original language to test translation quality.")
 
-# Define language options that OPUS-MT supports for translation to/from English
-language_options = {
-    "spa": "Spanish",
-    "fra": "French",
-    "deu": "German",
-    "ita": "Italian",
-    "por": "Portuguese",
-    "rus": "Russian",
-    "cmn": "Chinese (Simplified)",
-    "jpn": "Japanese",
-    "kor": "Korean",
-    "ara": "Arabic",
-    "hin": "Hindi",
-    "eng": "English"
-}
-
-# Add Streamlit cache to avoid reloading models on every interaction
-@st.cache_resource
-def get_cached_models():
-    return load_models()
-
-# Load models and tokenizers using the cached function
-model_to_en, tokenizer_to_en, model_from_en, tokenizer_from_en = get_cached_models()
+# Load NLLB model and tokenizer
+model, tokenizer = load_model()
 
 # Select source language
 src_lang = st.selectbox("Select source language:", 
                       options=list(language_options.keys()), 
                       format_func=lambda x: language_options[x])
-tgt_lang = "eng"  # English is always the target for the first translation
+tgt_lang = "eng_Latn"  # English is always the target for the first translation
 
 # Get input text
 text_input = st.text_area("Enter text to translate:")
 
 # Add a check to display model information
 if st.checkbox("Show model information"):
-    st.write("**Translation to English Model:**", "Helsinki-NLP/opus-mt-mul-en")
-    st.write("**Translation from English Model:**", "Helsinki-NLP/opus-mt-en-mul")
+    st.write("**Model:** facebook/nllb-200-distilled-600M")
+    st.write("**Supported languages:** 200+ languages")
 
 # Translate button
 if st.button("Translate"):
@@ -104,8 +96,7 @@ if st.button("Translate"):
         with st.spinner("Translating..."):
             # Show a progress indicator
             results = roundtrip_translate(
-                text_input, model_to_en, tokenizer_to_en, 
-                model_from_en, tokenizer_from_en, src_lang, tgt_lang
+                text_input, model, tokenizer, src_lang, tgt_lang
             )
             
             # Display results in separate containers
