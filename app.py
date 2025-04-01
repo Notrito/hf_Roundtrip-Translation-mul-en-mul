@@ -4,25 +4,21 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import gradio as gr
 
 def load_model(model_name="facebook/nllb-200-distilled-600M"):
-    """Load translation model and tokenizer with memory optimizations for CPU"""
+    """Load translation model and tokenizer with simple configuration"""
     print(f"Loading model: {model_name}")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     
-    # Check if GPU is available
-    if torch.cuda.is_available():
+    # Simple model loading without advanced parameters
+    try:
         model = AutoModelForSeq2SeqLM.from_pretrained(
             model_name,
-            torch_dtype=torch.float16,  
-            device_map="auto",          
-            low_cpu_mem_usage=True      
+            device_map="auto" if torch.cuda.is_available() else None,
+            torch_dtype=torch.float16 if torch.cuda.is_available() else None
         )
-    else:
-        # CPU-compatible loading without float16
-        model = AutoModelForSeq2SeqLM.from_pretrained(
-            model_name,
-            low_cpu_mem_usage=True,    
-            device_map="auto"           
-        )
+    except ImportError:
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)  # MODEL
+        if torch.cuda.is_available():
+            model = model.to("cuda")
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
