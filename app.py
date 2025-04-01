@@ -41,8 +41,8 @@ def roundtrip_translate(text, model_to_en, tokenizer_to_en, model_from_en, token
             "back_translation": "Error: Models not loaded."
         }
     
-    forward_translation = translate(text, model_to_en, tokenizer_to_en, src_lang, "eng")
-    back_translation = translate(forward_translation, model_from_en, tokenizer_from_en, "eng", tgt_lang)
+    forward_translation = translate(text, model_to_en, tokenizer_to_en, src_lang, tgt_lang)
+    back_translation = translate(forward_translation, model_from_en, tokenizer_from_en, tgt_lang, src_lang)
     
     return {
         "original": text,
@@ -73,8 +73,7 @@ language_options = {
 }
 
 src_lang = st.selectbox("Select source language:", options=list(language_options.keys()), format_func=lambda x: language_options[x])
-tgt_lang = st.selectbox("Select target language:", options=list(language_options.keys()), format_func=lambda x: language_options[x])
-
+tgt_lang = "eng"
 text_input = st.text_area("Enter text to translate:")
 if st.button("Translate"):
     if text_input:
