@@ -1,115 +1,136 @@
-import streamlit as st
+import argparse
 import torch
-import soundfile as sf
-from kokoro import KPipeline
-from kokoro.pipeline import LANG_CODES
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+import gradio as gr
 
+def load_model(model_name="facebook/nllb-200-distilled-600M"):
+    """Load translation model and tokenizer with memory optimizations for CPU"""
+    print(f"Loading model: {model_name}")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+    # Check if GPU is available
+    if torch.cuda.is_available():
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float16,  
+            device_map="auto",          
+            low_cpu_mem_usage=True      
+        )
+    else:
+        # CPU-compatible loading without float16
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            model_name,
+            low_cpu_mem_usage=True,    
+            device_map="auto"           
+        )
+    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
+    
+    return model, tokenizer
 
-# Streamlit UI
-st.title("Kokoro-TTS all languages")
-st.markdown("## Text to Speech")
-st.markdown("Mix text and selected languages for some funny accents")
+def translate(text, source_lang, target_lang, model, tokenizer):
+    """Translate text from source language to target language"""
+    tokenizer.src_lang = source_lang
+    inputs = tokenizer(text, return_tensors="pt").to(model.device)
+    
+    translated_tokens = model.generate(
+        **inputs,
+        forced_bos_token_id=tokenizer.lang_code_to_id[target_lang],
+        max_length=200
+    )
+    
+    return tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0]
 
-# Create language options dictionary
-lang_options = {f"{name}": code for code, name in LANG_CODES.items()}
-
-# Streamlit language selection
-selected_lang = st.selectbox("Select language", list(lang_options.keys()))
-code_lang = lang_options[selected_lang]
-
-# Print language confirmation
-# st.write(f"🔹 Selected Language: {selected_lang}")
-# st.write(f"🔹 Language Code: `{code_lang}`")
-
-# Define voice options based on selected language
-voice_options = {
-    "a": {
-        "Heart": "af_heart", "Alloy": "af_alloy", "Aoede": "af_aoede",
-        "Bella": "af_bella", "Jessica": "af_jessica", "Kore": "af_kore",
-        "Nicole": "af_nicole", "Nova": "af_nova", "River": "af_river",
-        "Sarah": "af_sarah", "Sky": "af_sky",
-        "Adam": "am_adam", "Echo": "am_echo", "Eric": "am_eric",
-        "Fenrir": "am_fenrir", "Liam": "am_liam", "Michael": "am_michael",
-        "Onyx": "am_onyx", "Puck": "am_puck", "Santa": "am_santa"
-    },
-    "b": {
-        "Alice": "bf_alice", "Emma": "bf_emma", "Isabella": "bf_isabella", "Lily": "bf_lily",
-        "Daniel": "bm_daniel", "Fable": "bm_fable", "George": "bm_george", "Lewis": "bm_lewis"
-    },
-    "j": {
-        "Alpha": "jf_alpha", "Gongitsune": "jf_gongitsune", "Nezumi": "jf_nezumi", 
-        "Tebukuro": "jf_tebukuro", "Kumo": "jm_kumo"
-    },
-    "z": {
-        "Xiaobei": "zf_xiaobei", "Xiaoni": "zf_xiaoni", "Xiaoxiao": "zf_xiaoxiao", "Xiaoyi": "zf_xiaoyi",
-        "Yunjian": "zm_yunjian", "Yunxi": "zm_yunxi", "Yunxia": "zm_yunxia", "Yunyang": "zm_yunyang"
-    },
-    "e": {
-        "Dora": "ef_dora", "Alex": "em_alex", "Santa": "em_santa"
-    },
-    "f": {
-        "Siwis": "ff_siwis"
-    },
-    "h": {
-        "Alpha": "hf_alpha", "Beta": "hf_beta", "Omega": "hm_omega", "Psi": "hm_psi"
-    },
-    "i": {
-        "Sara": "if_sara", "Nicola": "im_nicola"
-    },
-    "p": {
-        "Dora": "pf_dora", "Alex": "pm_alex", "Santa": "pm_santa"
+def roundtrip_translate(text, source_lang, target_lang, model, tokenizer):
+    """Perform round-trip translation and return all results"""
+    # First translation: source -> target
+    forward_translation = translate(text, source_lang, target_lang, model, tokenizer)
+    
+    # Second translation: target -> source (back translation)
+    back_translation = translate(forward_translation, target_lang, source_lang, model, tokenizer)
+    
+    return {
+        "original": text,
+        "forward_translation": forward_translation,
+        "back_translation": back_translation
     }
+
+# Language codes and names for NLLB
+language_options = {
+    "eng_Latn": "English",
+    "spa_Latn": "Spanish",
+    "fra_Latn": "French",
+    "deu_Latn": "German",
+    "ita_Latn": "Italian",
+    "por_Latn": "Portuguese",
+    "rus_Cyrl": "Russian",
+    "cmn_Hans": "Chinese (Simplified)",
+    "jpn_Jpan": "Japanese",
+    "kor_Hang": "Korean",
+    "ara_Arab": "Arabic",
+    "hin_Deva": "Hindi"
 }
 
-
-# Get available voices for selected language
-available_voices = voice_options.get(code_lang, {})
-
-# Show second dropdown only if the first selection is valid
-if available_voices:
-    name_voice = st.selectbox("Select a voice", list(available_voices.keys()))
-    selected_voice = available_voices[name_voice] # VOICE
-
-    # Print voice confirmation
-    # st.write(f"🔹 Selected Voice Code: `{selected_voice}`")
-else:
-    st.error("No voices available for the selected language.")
+def main():
+    # Load model and tokenizer
+    model, tokenizer = load_model()
     
-# Load the text-to-speech model
-@st.cache_resource
-def load_pipeline():
-    return KPipeline(lang_code=code_lang)  # LANGUAGE
-
-pipeline = load_pipeline()
-
-
-
-# User input
-text = st.text_area("Put voice to your text 🎙️:", "Here your text")
-
-# Generate speech on button click
-if st.button("Generate Speech"):
-    if text.strip():
-        with st.spinner("Generating audio..."):
-            generator = pipeline(text, voice=selected_voice )  # CHANGE VOICE
-
-            audio_data = None
-            for i, (gs, ps, audio) in enumerate(generator):
-                audio_data = audio  # Save last audio chunk
-
-            if audio_data is not None:
-                # Save and play audio
-                audio_path = "generated_speech.wav"
-                sf.write(audio_path, audio_data, 24000)
-                st.audio(audio_path, format="audio/wav")
-            
-                st.success("Speech generation complete!")
+    # Create Gradio interface
+    with gr.Blocks(title="Round-Trip Translation Demo") as demo:
+        gr.Markdown("# Translation Round-Trip Demo")
+        gr.Markdown("See how well the model preserves meaning by translating text to another language and back.")
+        
+        with gr.Row():
+            source_lang = gr.Dropdown(
+                choices=list(language_options.items()), 
+                label="Source Language",
+                value="eng_Latn"
+            )
+            target_lang = gr.Dropdown(
+                choices=list(language_options.items()), 
+                label="Target Language",
+                value="spa_Latn"
+            )
+        
+        input_text = gr.Textbox(
+            label="Original Text", 
+            placeholder="Enter text to translate...",
+            lines=3
+        )
+        
+        translate_btn = gr.Button("Translate")
+        
+        with gr.Row():
+            with gr.Column():
+                target_translation = gr.Textbox(label="Translation", lines=3)
+            with gr.Column():
+                back_translation = gr.Textbox(label="Back-Translation", lines=3)
+        
+        def process_translation(text, src_lang, tgt_lang):
+            results = roundtrip_translate(text, src_lang, tgt_lang, model, tokenizer)
+            return results["forward_translation"], results["back_translation"]
+        
+        translate_btn.click(
+            fn=process_translation,
+            inputs=[input_text, source_lang, target_lang],
+            outputs=[target_translation, back_translation]
+        )
+        
+        # Example inputs
+        examples = [
+            ["Hello, how are you today? I hope you're doing well.", "eng_Latn", "spa_Latn"],
+            ["The quick brown fox jumps over the lazy dog.", "eng_Latn", "fra_Latn"],
+            ["Translation models have improved significantly in recent years.", "eng_Latn", "deu_Latn"],
+        ]
+        
+        gr.Examples(
+            examples=examples,
+            inputs=[input_text, source_lang, target_lang]
+        )
     
-                # Option to download
-                with open(audio_path, "rb") as f:
-                    st.download_button("Download Audio", f, file_name="speech.wav", mime="audio/wav")
-            else:
-                st.error("Failed to generate audio.")
+    # Launch the interface
+    demo.launch(share=False)
 
-    else:
-        st.error("Please enter some text to generate speech.")
+if __name__ == "__main__":
+    main()
