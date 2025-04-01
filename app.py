@@ -6,11 +6,15 @@ def load_models():
     """Load translation models and tokenizers for multilingual translation"""
     print("Loading models...")
     
-    model_to_en = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-mul-en")
-    tokenizer_to_en = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-mul-en")
-    
-    model_from_en = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-mul")
-    tokenizer_from_en = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-mul")
+    try:
+        model_to_en = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-mul-en")
+        tokenizer_to_en = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-mul-en")
+        
+        model_from_en = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-en-mul")
+        tokenizer_from_en = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-en-mul")
+    except Exception as e:
+        print(f"Error loading models: {e}")
+        return None, None, None, None
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model_to_en = model_to_en.to(device)
@@ -22,6 +26,9 @@ def load_models():
 
 def translate(text, model, tokenizer):
     """Translate text using the given model and tokenizer"""
+    if model is None or tokenizer is None:
+        return "Model not loaded."
+    
     device = next(model.parameters()).device
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
     inputs = {k: v.to(device) for k, v in inputs.items()}
@@ -31,6 +38,13 @@ def translate(text, model, tokenizer):
 
 def roundtrip_translate(text, model_to_en, tokenizer_to_en, model_from_en, tokenizer_from_en):
     """Perform round-trip translation using two models"""
+    if None in (model_to_en, tokenizer_to_en, model_from_en, tokenizer_from_en):
+        return {
+            "original": text,
+            "forward_translation": "Error: Models not loaded.",
+            "back_translation": "Error: Models not loaded."
+        }
+    
     forward_translation = translate(text, model_to_en, tokenizer_to_en)
     back_translation = translate(forward_translation, model_from_en, tokenizer_from_en)
     
