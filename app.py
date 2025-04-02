@@ -55,6 +55,19 @@ def roundtrip_translate(text, model, tokenizer, src_lang, tgt_lang="eng_Latn"):
         "back_translation": back_translation
     }
 
+def calculate_exact_match_percentage(original, back_translated):
+    original_words = original.lower().split()
+    back_words = back_translated.lower().split()
+    
+    # Contar palabras coincidentes en la misma posición
+    matches = sum(1 for o, b in zip(original_words, back_words) if o == b)
+    
+    # Calcular porcentaje
+    total_words = len(original_words)
+    percentage = (matches / total_words) * 100 if total_words > 0 else 0
+    
+    return percentage
+    
 # Diccionario de idiomas
 language_options = {
     "spa_Latn": "Spanish",
@@ -162,20 +175,18 @@ if st.button("Translate", type="primary"):
         with col3:
             st.markdown(f"<div class='translation-box'><b>Back Translation</b> ({language_options[src_lang]})<hr>{results['back_translation']}</div>", unsafe_allow_html=True)
 
-        # Evaluación de calidad de traducción
+         # Cálculo de porcentaje de palabras exactas
+        exact_match_percentage = calculate_exact_match_percentage(results['original'], results['back_translation'])
+        
         st.subheader("Roundtrip Quality Assessment")
-        
-        original_words = set(results['original'].lower().split())
-        back_words = set(results['back_translation'].lower().split())
-        common_words = original_words.intersection(back_words)
-        similarity = len(common_words) / max(len(original_words), len(back_words)) * 100
-        
-        if similarity > 80:
-            st.success(f"Good translation! About {similarity:.1f}% of the meaning was preserved.")
-        elif similarity > 50:
-            st.warning(f"Moderate translation quality. About {similarity:.1f}% of the meaning was preserved.")
+        st.info(f"**Exact Word Match Percentage:** {exact_match_percentage:.1f}%")
+
+        if exact_match_percentage > 80:
+            st.success("Great translation! Most words remained unchanged.")
+        elif exact_match_percentage > 50:
+            st.warning("Moderate quality. Some words changed.")
         else:
-            st.error(f"Poor translation quality. Only about {similarity:.1f}% of the meaning was preserved.")
+            st.error("Low quality. Many words were altered.")
 
         st.write("**Original:** ", results['original'])
         st.write("**Roundtrip:** ", results['back_translation'])
