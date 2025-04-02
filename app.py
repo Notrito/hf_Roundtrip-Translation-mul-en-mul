@@ -98,9 +98,12 @@ st.markdown("""
         background-color: #f0f2f6;
         color: black;
         border-radius: 10px;
-        padding: 20px;
+        padding: 10px 15px; /* Reducido el padding */
         margin: 10px 0;
         font-size: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start; /* Alinea el texto arriba */
     }
     .arrow {
         font-size: 32px;
