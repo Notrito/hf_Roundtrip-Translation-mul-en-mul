@@ -4,8 +4,10 @@ import streamlit as st
 import time
 from streamlit_lottie import st_lottie
 import requests
+from difflib import SequenceMatcher
+from collections import Counter
 
-# Función para cargar el modelo y el tokenizador
+# Function to load the model and tokenizer
 @st.cache_resource
 def load_model(model_name="facebook/nllb-200-distilled-600M"):
     try:
@@ -16,7 +18,7 @@ def load_model(model_name="facebook/nllb-200-distilled-600M"):
         st.error(f"Error loading model: {e}")
         return None, None
 
-# Función para traducir
+# Function to translate
 def translate(text, model, tokenizer, source_lang, target_lang):
     if model is None or tokenizer is None:
         return "Model not loaded."
@@ -37,7 +39,7 @@ def translate(text, model, tokenizer, source_lang, target_lang):
     
     return tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0]
 
-# Traducción de ida y vuelta
+# Round-trip translation function
 def roundtrip_translate(text, model, tokenizer, src_lang, tgt_lang="eng_Latn"):
     if model is None or tokenizer is None:
         return {
@@ -55,20 +57,48 @@ def roundtrip_translate(text, model, tokenizer, src_lang, tgt_lang="eng_Latn"):
         "back_translation": back_translation
     }
 
-def calculate_exact_match_percentage(original, back_translated):
+def calculate_sequence_similarity(original, back_translated):
+    """
+    Calcula la similitud carácter por carácter usando SequenceMatcher.
+    Retorna un valor entre 0 y 100.
+    """
+    # Normalize: convert to lower and remove extra spaces at the end
+    original_normalized = original.lower().strip()
+    back_normalized = back_translated.lower().strip()
+    
+    # Calculate similarity
+    similarity = SequenceMatcher(None, original_normalized, back_normalized).ratio()
+
+    return similarity * 100
+
+def calculate_word_overlap(original, back_translated):
+    """
+    Calcula el solapamiento de palabras usando Counter (Bag of Words).
+    Ignora el orden de las palabras.
+    Retorna un valor entre 0 y 100.
+    """
+    # Normalize: convert to lower and remove extra spaces at the end
     original_words = original.lower().split()
     back_words = back_translated.lower().split()
     
-    # Contar palabras coincidentes en la misma posición
-    matches = sum(1 for o, b in zip(original_words, back_words) if o == b)
+    # Count word frequencies
+    counter_original = Counter(original_words)
+    counter_back = Counter(back_words)
     
-    # Calcular porcentaje
-    total_words = len(original_words)
-    percentage = (matches / total_words) * 100 if total_words > 0 else 0
+    # Intersction of both counters to find common words
+    common = counter_original & counter_back
+    
+    # Sum the counts of common words
+    overlap = sum(common.values())
+    
+    # Total words in the original text
+    total = sum(counter_original.values())
+    
+    percentage = (overlap / total) * 100 if total > 0 else 0
     
     return percentage
-    
-# Diccionario de idiomas
+
+# Language dictionary
 language_options = {
     "spa_Latn": "Spanish",
     "fra_Latn": "French",
@@ -84,14 +114,14 @@ language_options = {
     "eng_Latn": "English"
 }
 
-# Configuración de la página
+# Page configuration
 st.set_page_config(
     page_title="Round-Trip Translation",
     page_icon="🌐",
     layout="wide"
 )
 
-# Estilos CSS para mejorar la visualización
+# CSS styling
 st.markdown("""
 <style>
     .translation-box {
@@ -123,11 +153,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Título
+# TTitle
 st.markdown('<div class="title-text">Round-Trip Translation</div>', unsafe_allow_html=True)
 st.write("Translate text to English and back to its original language to visualize translation quality.")
 
-# Cargar modelo
+# Load model
 with st.sidebar:
     st.header("Settings")
     model, tokenizer = load_model()
@@ -152,16 +182,14 @@ with st.sidebar:
         except Exception as e:
             st.error(f"Error clearing memory: {e}")
 
-# Entrada de texto
 text_input = st.text_area("Enter text to translate:", height=100)
 
-# Botón de traducción
 if st.button("Translate", type="primary"):
     if text_input:
-        # Realizar traducción
+
         results = roundtrip_translate(text_input, model, tokenizer, src_lang, "eng_Latn")
         
-        # Diseño en columnas
+
         col1, col2 = st.columns([0.45, 0.45])  # Dos columnas para Original y Forward Translation
         
         with col1:
@@ -170,26 +198,44 @@ if st.button("Translate", type="primary"):
         with col2:
             st.markdown(f"<div class='translation-box'><b>Forward Translation</b> (English)<hr>{results['forward_translation']}</div>", unsafe_allow_html=True)
 
-        # Flecha central
+        # Arrow
         st.markdown("<div class='arrow'>↓</div>", unsafe_allow_html=True)
 
-        # Segunda fila: Back Translation
-        col3, _ = st.columns([0.45, 0.45])  # Segunda fila con una sola columna a la izquierda
+        # second row
+        col3, _ = st.columns([0.45, 0.45])  # only one column to the left
         with col3:
             st.markdown(f"<div class='translation-box'><b>Back Translation</b> ({language_options[src_lang]})<hr>{results['back_translation']}</div>", unsafe_allow_html=True)
 
-         # Cálculo de porcentaje de palabras exactas
-        exact_match_percentage = calculate_exact_match_percentage(results['original'], results['back_translation'])
+         # similarities
+        sequence_similarity = calculate_sequence_similarity(results['original'], results['back_translation'])
+        word_overlap = calculate_word_overlap(results['original'], results['back_translation'])
         
         st.subheader("Roundtrip Quality Assessment")
-        st.info(f"**Exact Word Match Percentage:** {exact_match_percentage:.1f}%")
 
-        if exact_match_percentage > 80:
-            st.success("Great translation! Most words remained unchanged.")
-        elif exact_match_percentage > 50:
-            st.warning("Moderate quality. Some words changed.")
+        # metrics
+        col_metric1, col_metric2 = st.columns(2)
+
+        with col_metric1:
+            st.metric(
+                label="Character Similarity",
+                value=f"{sequence_similarity:.1f}%",
+                help="How similar are the texts character by character (sensitive to word order)"
+            )
+
+        with col_metric2:
+            st.metric(
+                label="Word Overlap",
+                value=f"{word_overlap:.1f}%",
+                help="Percentage of original words present in roundtrip (ignores word order)"
+            )
+        average_score = (sequence_similarity + word_overlap) / 2
+
+        if average_score > 80:
+            st.success("✅ Excellent translation! High fidelity maintained.")
+        elif average_score > 60:
+            st.warning("⚠️ Good translation with some variations.")
         else:
-            st.error("Low quality. Many words were altered.")
+            st.error("❌ Significant changes detected in the roundtrip.")
 
         st.write("**Original:** ", results['original'])
         st.write("**Roundtrip:** ", results['back_translation'])
